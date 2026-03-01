@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "postinstall": "npx playwright install chromium",
     "build": "tsc",
     "start": "node dist/server.js"
   },
@@ -13,7 +14,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "express": "^5.2.1",
+    "express": "^5.2.1",  
     "playwright": "^1.58.2"
   },
   "devDependencies": {
