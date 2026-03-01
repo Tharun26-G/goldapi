@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: gold-playwright-api
+    runtime: node
+    buildCommand: |
+      npm install
+      npx playwright install --with-deps
+      npm run build
+    startCommand: npm start
