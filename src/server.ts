@@ -2,7 +2,7 @@ import express from "express";
 import { getPrices } from "./cache.js";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.get("/prices", async (req, res) => {
   try {
