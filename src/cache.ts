@@ -4,7 +4,7 @@ import { Prices } from "./types.js";
 let cachedData: Prices | null = null;
 let lastFetchTime = 0;
 
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const CACHE_DURATION = 90 * 60 * 1000; // 90 minutes
 
 export async function getPrices(): Promise<Prices> {
   const now = Date.now();
