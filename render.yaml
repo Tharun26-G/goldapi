@@ -1,4 +1,5 @@
 services:
+  # --- Web API ---
   - type: web
     name: gold-playwright-api
     runtime: node
@@ -7,3 +8,14 @@ services:
       npx playwright install --with-deps
       npm run build
     startCommand: npm start
+
+  # --- Cron Job (Every 3 Hours from 9:30 AM IST) ---
+  - type: cron
+    name: gold-price-cron
+    runtime: node
+    schedule: "0 4-22/3 * * *"
+    buildCommand: |
+      npm install
+      npx playwright install --with-deps
+      npm run build
+    startCommand: node dist/runScraper.js
