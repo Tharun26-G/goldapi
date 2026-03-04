@@ -1,15 +1,11 @@
 services:
-  # --- Web API ---
+  # --- Web API (Docker) ---
   - type: web
     name: gold-playwright-api
-    runtime: node
-    buildCommand: |
-      npm install
-      npx playwright install --with-deps
-      npm run build
-    startCommand: npm start
+    env: docker
+    plan: free
 
-  # --- Cron Job (Every 3 Hours from 9:30 AM IST) ---
+  # --- Cron Job (Node runtime, NOT docker) ---
   - type: cron
     name: gold-price-cron
     runtime: node
