@@ -1,8 +1,19 @@
 import express from "express";
-import { getPrices } from "./cache.js";
+import cron from "node-cron";
+import { getPrices, refreshPriceCache } from "./cache.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Schedule cron job to run every 3 hours: "0 */3 * * *"
+cron.schedule("0 */3 * * *", () => {
+  console.log("Cron job triggered: Refreshing prices...");
+  refreshPriceCache();
+});
+
+// Initial fetch on startup
+console.log("Initial cache build...");
+refreshPriceCache();
 
 app.get("/prices", async (req, res) => {
   try {
@@ -10,11 +21,12 @@ app.get("/prices", async (req, res) => {
 
     res.json({
       success: true,
-      data: prices
+      data: prices,
+      cached_at: prices.last_updated
     });
 
   } catch (error: any) {
-    console.error("SCRAPER ERROR:", error);
+    console.error("API ERROR:", error);
 
     res.status(500).json({
       success: false,

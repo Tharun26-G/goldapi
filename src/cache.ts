@@ -1,24 +1,49 @@
 import { scrapePrices } from "./scraper/scrape.js";
 import { Prices } from "./types.js";
+import fs from "fs";
+import path from "path";
 
+const CACHE_FILE = path.join(process.cwd(), "prices_cache.json");
 let cachedData: Prices | null = null;
-let lastFetchTime = 0;
 
-const CACHE_DURATION = 90 * 60 * 1000; // 90 minutes
+// Try to load initial cache from file
+try {
+  if (fs.existsSync(CACHE_FILE)) {
+    const data = fs.readFileSync(CACHE_FILE, "utf-8");
+    cachedData = JSON.parse(data);
+    console.log("Loaded cache from file");
+  }
+} catch (err) {
+  console.error("Failed to load cache from file:", err);
+}
+
+export async function refreshPriceCache() {
+  console.log("Refreshing price cache...");
+  try {
+    const freshData = await scrapePrices();
+    cachedData = freshData;
+
+    // Persist to file
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(freshData, null, 2));
+
+    console.log("Cache updated successfully at", new Date().toLocaleString());
+  } catch (error) {
+    console.error("Failed to refresh cache:", error);
+  }
+}
 
 export async function getPrices(): Promise<Prices> {
-  const now = Date.now();
-
-  if (cachedData && now - lastFetchTime < CACHE_DURATION) {
-    console.log("Returning cached data");
+  if (cachedData) {
     return cachedData;
   }
 
-  console.log("Fetching fresh data...");
-  const freshData = await scrapePrices();
+  // If no cache, fetch once synchronously (first request penalty)
+  await refreshPriceCache();
 
-  cachedData = freshData;
-  lastFetchTime = now;
+  if (!cachedData) {
+    throw new Error("Failed to fetch prices and no cache available");
+  }
 
-  return freshData;
+  return cachedData;
 }
+
