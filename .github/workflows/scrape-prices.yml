@@ -1,0 +1,14 @@
+name: Trigger Render Scraper
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'  # Every 3 hours
+  workflow_dispatch:      # Manual trigger
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploy/Job
+        run: |
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
