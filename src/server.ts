@@ -11,9 +11,9 @@ cron.schedule("0 */3 * * *", () => {
   refreshPriceCache();
 });
 
-// Initial fetch on startup
-console.log("Initial cache build...");
-refreshPriceCache();
+// Background initial refresh only if cache is missing or stale
+// This won't block the server from listening
+refreshPriceCache().catch(err => console.error("Initial refresh failed:", err));
 
 app.get("/prices", async (req, res) => {
   try {

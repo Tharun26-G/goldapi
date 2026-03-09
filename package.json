@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "postinstall": "npx playwright install chromium",
-    "build": "tsc",
+    "build": "tsc && npm run scrape",
     "scrape": "node dist/runScraper.js",
     "start": "node dist/server.js"
   },
