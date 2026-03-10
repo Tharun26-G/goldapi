@@ -11,9 +11,12 @@ cron.schedule("0 */3 * * *", () => {
   refreshPriceCache();
 });
 
-// Background initial refresh only if cache is missing or stale
-// This won't block the server from listening
-refreshPriceCache().catch(err => console.error("Initial refresh failed:", err));
+// Background initialization is handled inside cache.ts
+// refreshPriceCache() is called automatically there if needed
+
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
 
 app.get("/prices", async (req, res) => {
   try {

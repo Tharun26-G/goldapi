@@ -2,13 +2,19 @@ name: Trigger Render Scraper
 
 on:
   schedule:
-    - cron: '0 */3 * * *'  # Every 3 hours
-  workflow_dispatch:      # Manual trigger
+    - cron: '0 */3 * * *'    # Every 3 hours (Trigger Refresh/Deploy)
+    - cron: '*/10 * * * *'   # Every 10 minutes (Keep Alive Ping)
+  workflow_dispatch:        # Manual trigger
 
 jobs:
-  trigger:
+  maintenance:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Render Deploy/Job
+      - name: Keep Alive Ping
+        run: |
+          curl -s -f ${{ secrets.RENDER_APP_URL }}/health || echo "App might be sleeping or deploying"
+
+      - name: Trigger Render Scraper
+        if: github.event.schedule == '0 */3 * * *' || github.event_name == 'workflow_dispatch'
         run: |
           curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}

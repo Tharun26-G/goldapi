@@ -24,16 +24,20 @@ try {
     const data = fs.readFileSync(CACHE_FILE, "utf-8");
     const parsed = JSON.parse(data);
 
-    // Check if the file cache is still valid (less than 3 hours old)
-    const lastUpdated = new Date(parsed.last_updated).getTime();
-    const now = new Date().getTime();
+    // Always load the data to memory so we have something to return immediately
+    cachedData = parsed;
+    console.log("Loaded existing cache from file at start");
 
-    if (now - lastUpdated < CACHE_TTL_MS) {
-      cachedData = parsed;
-      console.log("Loaded fresh cache from file");
-    } else {
-      console.log("File cache is stale, will need refresh");
+    // Check if the file cache is still valid
+    const lastUpdated = new Date(parsed.last_updated).getTime();
+    const now = Date.now();
+
+    if (now - lastUpdated >= CACHE_TTL_MS) {
+      console.log("File cache is stale, triggering background refresh...");
+      refreshPriceCache();
     }
+  } else {
+    console.log("No cache file found on startup.");
   }
 } catch (err) {
   console.error("Failed to load cache from file:", err);
@@ -42,13 +46,12 @@ try {
 export async function refreshPriceCache() {
   // Prevent multiple concurrent refreshes
   if (refreshPromise) {
-    console.log("Refresh already in progress, waiting...");
     return refreshPromise;
   }
 
-  console.log("Refreshing price cache...");
   refreshPromise = (async () => {
     try {
+      console.log("Refreshing price cache...");
       const freshData = await scrapePrices();
       cachedData = freshData;
 
@@ -59,7 +62,6 @@ export async function refreshPriceCache() {
       console.log("Cache updated successfully at", new Date().toLocaleString());
     } catch (error) {
       console.error("Failed to refresh cache:", error);
-      // Don't throw here, just log so the promise settles
     } finally {
       refreshPromise = null;
     }
@@ -69,24 +71,23 @@ export async function refreshPriceCache() {
 }
 
 export async function getPrices(): Promise<Prices> {
-  // 1. If we have data, check if it's still fresh
+  // 1. If we have data (even if stale), return it immediately
   if (cachedData) {
     const lastUpdated = new Date(cachedData.last_updated).getTime();
-    const now = new Date().getTime();
+    const now = Date.now();
 
-    // If it's less than 3 hours old, return it immediately
-    if (now - lastUpdated < CACHE_TTL_MS) {
-      return cachedData;
+    // If it's older than 3 hours, trigger background refresh
+    if (now - lastUpdated >= CACHE_TTL_MS) {
+      console.log("Cache is stale, triggering background refresh...");
+      refreshPriceCache(); // Fire and forget (it handles its own promise)
     }
 
-    // If it's older than 3 hours, trigger background refresh but return stale data for speed
-    console.log("Cache is stale, triggering background refresh...");
-    refreshPriceCache();
+    // Return the data we have immediately (even if stale)
     return cachedData;
   }
 
-  // 2. If no data at all, we must wait for a refresh
-  console.log("No cache available, fetching now...");
+  // 2. ONLY if no data at all, we must wait for a refresh
+  console.log("No cache available, fetching now (initial load)...");
   await refreshPriceCache();
 
   if (!cachedData) {
