@@ -10,25 +10,21 @@ const CACHE_TTL_MS = 3 * 60 * 60 * 1000; // 3 hours
 let cachedData: Prices | null = null;
 let refreshPromise: Promise<void> | null = null;
 
-// Helper to ensure cache directory exists
 function ensureCacheDir() {
   if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
   }
 }
 
-// Try to load initial cache from file
 try {
   ensureCacheDir();
   if (fs.existsSync(CACHE_FILE)) {
     const data = fs.readFileSync(CACHE_FILE, "utf-8");
     const parsed = JSON.parse(data);
 
-    // Always load the data to memory so we have something to return immediately
     cachedData = parsed;
     console.log("Loaded existing cache from file at start");
 
-    // Check if the file cache is still valid
     const lastUpdated = new Date(parsed.last_updated).getTime();
     const now = Date.now();
 
@@ -44,7 +40,6 @@ try {
 }
 
 export async function refreshPriceCache() {
-  // Prevent multiple concurrent refreshes
   if (refreshPromise) {
     return refreshPromise;
   }
@@ -55,7 +50,6 @@ export async function refreshPriceCache() {
       const freshData = await scrapePrices();
       cachedData = freshData;
 
-      // Persist to file
       ensureCacheDir();
       fs.writeFileSync(CACHE_FILE, JSON.stringify(freshData, null, 2));
 
@@ -71,22 +65,18 @@ export async function refreshPriceCache() {
 }
 
 export async function getPrices(): Promise<Prices> {
-  // 1. If we have data (even if stale), return it immediately
   if (cachedData) {
     const lastUpdated = new Date(cachedData.last_updated).getTime();
     const now = Date.now();
 
-    // If it's older than 3 hours, trigger background refresh
     if (now - lastUpdated >= CACHE_TTL_MS) {
       console.log("Cache is stale, triggering background refresh...");
       refreshPriceCache(); // Fire and forget (it handles its own promise)
     }
 
-    // Return the data we have immediately (even if stale)
     return cachedData;
   }
 
-  // 2. ONLY if no data at all, we must wait for a refresh
   console.log("No cache available, fetching now (initial load)...");
   await refreshPriceCache();
 
